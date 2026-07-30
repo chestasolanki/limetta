@@ -14,12 +14,12 @@ export const apiFetch = async (endpoint, options = {}) => {
   }
 
   const defaultOptions = {
+    ...options,
     credentials: 'include',
     headers: {
       ...defaultHeaders,
       ...options.headers
-    },
-    ...options
+    }
   };
 
   const response = await fetch(url, defaultOptions);

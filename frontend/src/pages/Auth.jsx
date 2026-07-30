@@ -287,24 +287,7 @@ const Auth = () => {
                     />
                   </div>
 
-                  {forgotSentOtp && (
-                    <div style={{ 
-                      marginTop: '-0.5rem', 
-                      marginBottom: '1.5rem', 
-                      padding: '0.8rem 1rem', 
-                      backgroundColor: 'var(--accent-gold-light)', 
-                      border: '1px solid var(--border-color)', 
-                      borderRadius: '4px', 
-                      fontSize: '0.8rem', 
-                      color: 'var(--accent-gold-dark)',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}>
-                      <span>[Sandbox Fallback] Email credentials not set. Use code:</span>
-                      <strong style={{ fontSize: '1rem', letterSpacing: '2px' }}>{forgotSentOtp}</strong>
-                    </div>
-                  )}
+
 
                   <div className="form-group">
                     <label htmlFor="forgot-new-pass">New Security Code (Password)</label>
@@ -472,24 +455,7 @@ const Auth = () => {
                 />
               </div>
 
-              {sentOtp && (
-                <div style={{ 
-                  marginTop: '-0.5rem', 
-                  marginBottom: '1.5rem', 
-                  padding: '0.8rem 1rem', 
-                  backgroundColor: 'var(--accent-gold-light)', 
-                  border: '1px solid var(--border-color)', 
-                  borderRadius: '4px', 
-                  fontSize: '0.8rem', 
-                  color: 'var(--accent-gold-dark)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}>
-                  <span>[Sandbox Fallback] Email verification code:</span>
-                  <strong style={{ fontSize: '1rem', letterSpacing: '2px' }}>{sentOtp}</strong>
-                </div>
-              )}
+
 
               {errorMsg && (
                 <p style={{ color: '#B83B3B', fontSize: '0.8rem', marginBottom: '1.5rem' }}>{errorMsg}</p>

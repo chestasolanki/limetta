@@ -579,6 +579,9 @@ export const AppProvider = ({ children }) => {
       });
       
       if (data) {
+        if (data.token) {
+          localStorage.setItem('limetta_token', data.token);
+        }
         setUser({
           ...data,
           address: ''

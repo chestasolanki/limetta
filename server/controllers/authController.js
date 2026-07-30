@@ -48,19 +48,29 @@ const sendOTP = async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     const emailSent = await sendOTPEmail(email, otp);
-    const finalOtp = emailSent ? otp : '123456';
 
+    if (emailSent) {
+      tempOTPs[email] = {
+        otp,
+        expires: Date.now() + OTP_TTL_MS,
+        attempts: 0
+      };
+
+      return res.status(200).json({
+        message: 'OTP sent successfully to your email address'
+      });
+    }
+
+    // Fallback if EMAIL_USER environment variable is not configured yet on server
     tempOTPs[email] = {
-      otp: finalOtp,
+      otp: '123456',
       expires: Date.now() + OTP_TTL_MS,
       attempts: 0
     };
 
     res.status(200).json({
-      otp: emailSent ? undefined : '123456',
-      message: emailSent
-        ? 'OTP sent successfully to your email address'
-        : 'OTP verification code generated: 123456'
+      otp: '123456',
+      message: 'Email credentials not set on server. Sandbox verification OTP is: 123456'
     });
   } catch (error) {
     if (!isProd) console.error(error);

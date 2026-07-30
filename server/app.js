@@ -21,10 +21,13 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Cookie Parser Middleware
 app.use(cookieParser());
 
-// CORS Configuration (Allows credentials exchange with React dev server)
+// CORS Configuration (Allows credentials exchange with React dev server and Vercel deployment)
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      return callback(null, true);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']

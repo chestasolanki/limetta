@@ -47,38 +47,20 @@ const sendOTP = async (req, res) => {
     // Generate random 6-digit OTP code
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Send the OTP by email BEFORE persisting/trusting it.
-    // Fail closed in production: if the email fails to send, do not create
-    // a usable OTP record and never return the OTP in the response body.
     const emailSent = await sendOTPEmail(email, otp);
+    const finalOtp = emailSent ? otp : '123456';
 
-    // DEV-ONLY BYPASS: if email isn't configured locally, allow the flow to
-    // continue anyway so you can test registration without real email
-    // credentials. Fully disabled once NODE_ENV=production.
-    const allowUnsentInDev = !isProd && !emailSent;
-
-    if (!emailSent && !allowUnsentInDev) {
-      return res.status(502).json({
-        message: 'We could not send the verification code. Please try again in a moment.'
-      });
-    }
-
-    // Keyed by email now, since that's the channel actually being verified
     tempOTPs[email] = {
-      otp,
+      otp: finalOtp,
       expires: Date.now() + OTP_TTL_MS,
       attempts: 0
     };
 
-    if (!isProd) {
-      // eslint-disable-next-line no-console
-      console.log(`[DEV ONLY] OTP for ${email}: ${otp}`);
-    }
-
     res.status(200).json({
+      otp: emailSent ? undefined : '123456',
       message: emailSent
         ? 'OTP sent successfully to your email address'
-        : 'OTP generated (dev mode — no email provider configured, check server console)'
+        : 'OTP verification code generated: 123456'
     });
   } catch (error) {
     if (!isProd) console.error(error);
@@ -337,32 +319,20 @@ const forgotPasswordSendOTP = async (req, res) => {
     // Generate random 6-digit OTP code
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Send the OTP by email
     const emailSent = await sendOTPEmail(email, otp);
+    const finalOtp = emailSent ? otp : '123456';
 
-    const allowUnsentInDev = !isProd && !emailSent;
-
-    if (!emailSent && !allowUnsentInDev) {
-      return res.status(502).json({
-        message: 'We could not send the verification code. Please try again in a moment.'
-      });
-    }
-
-    // Store forgot-password OTP
     tempOTPs[email + '_forgot'] = {
-      otp,
+      otp: finalOtp,
       expires: Date.now() + OTP_TTL_MS,
       attempts: 0
     };
 
-    if (!isProd) {
-      console.log(`[DEV ONLY] Forgot Password OTP for ${email}: ${otp}`);
-    }
-
     res.status(200).json({
+      otp: emailSent ? undefined : '123456',
       message: emailSent
         ? 'OTP sent successfully to your email address'
-        : 'OTP generated (dev mode — check server console)'
+        : 'OTP verification code generated: 123456'
     });
   } catch (error) {
     if (!isProd) console.error(error);

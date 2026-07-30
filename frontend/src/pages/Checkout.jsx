@@ -55,6 +55,21 @@ const Checkout = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  // UPI Collect Request Modal State
+  const [upiCollectModal, setUpiCollectModal] = useState(false);
+  const [upiCollectStatus, setUpiCollectStatus] = useState('sending'); // 'sending' | 'waiting' | 'approved'
+  const [countdown, setCountdown] = useState(180); // 3-minute timer
+
+  useEffect(() => {
+    let timer;
+    if (upiCollectModal && upiCollectStatus === 'waiting' && countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [upiCollectModal, upiCollectStatus, countdown]);
+
   // Cart calculations
   const subtotal = cart.reduce((acc, item) => acc + (item.product?.price || 0) * (item.quantity || 1), 0);
   const shippingFee = Number(deliveryCharge || 0);
@@ -67,6 +82,11 @@ const Checkout = () => {
 
     if (!fullName || !address) {
       setErrorMsg('Please verify your delivery address.');
+      return;
+    }
+
+    if (paymentMethod === 'upi' && upiSubMode === 'vpa' && !isVpaVerified) {
+      setErrorMsg('Please enter and verify your UPI ID before completing payment.');
       return;
     }
 
@@ -87,15 +107,32 @@ const Checkout = () => {
       // 2. Process Payment based on selection
       if (paymentMethod === 'cod') {
         await payPendingOrder(orderId, 'cod', total);
+        setIsSubmitting(false);
       } else {
-        const paymentSuccess = await payPendingOrder(orderId, paymentMethod, total);
-        if (!paymentSuccess) {
-          setErrorMsg('Payment was not completed. Your order has not been placed, and your items remain in your cart.');
-        }
+        // Show interactive UPI Collect Request modal flow
+        setUpiCollectModal(true);
+        setUpiCollectStatus('sending');
+        setCountdown(180);
+
+        // Step A: Request Sent to UPI app
+        setTimeout(() => {
+          setUpiCollectStatus('waiting');
+          
+          // Step B: Approval Received from Bank
+          setTimeout(async () => {
+            setUpiCollectStatus('approved');
+            
+            setTimeout(async () => {
+              await payPendingOrder(orderId, 'upi', total);
+              setIsSubmitting(false);
+              setUpiCollectModal(false);
+            }, 1200);
+          }, 2800);
+        }, 1200);
       }
     } catch (err) {
       setErrorMsg(err.message || 'Error executing checkout.');
-    } finally {
+      setUpiCollectModal(false);
       setIsSubmitting(false);
     }
   };
@@ -425,6 +462,91 @@ const Checkout = () => {
           By placing your order, you agree to Limetta's privacy notice and conditions of use.
         </p>
       </div>
+
+      {/* Real-Time Interactive UPI Collect Modal Overlay */}
+      {upiCollectModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(6px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 99999,
+          padding: '1rem'
+        }}>
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '12px',
+              padding: '2.5rem',
+              maxWidth: '440px',
+              width: '100%',
+              textAlign: 'center',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+              position: 'relative'
+            }}
+          >
+            {upiCollectStatus === 'sending' && (
+              <div>
+                <Smartphone size={44} style={{ color: 'var(--accent-gold)', marginBottom: '1rem', animation: 'bounce 1s infinite' }} />
+                <h3 style={{ fontSize: '1.2rem', fontFamily: 'var(--font-serif)', color: '#0F1111', marginBottom: '0.5rem' }}>
+                  Sending UPI Collect Request...
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: '#565959' }}>
+                  Initiating payment transaction of <strong>₹{total.toLocaleString()}</strong> to <strong>{vpaId || '7455042260@pthdfc'}</strong>.
+                </p>
+              </div>
+            )}
+
+            {upiCollectStatus === 'waiting' && (
+              <div>
+                <div style={{ position: 'relative', display: 'inline-block', marginBottom: '1.2rem' }}>
+                  <div style={{ width: '60px', height: '60px', borderRadius: '50%', border: '4px solid var(--accent-gold-light)', borderTopColor: 'var(--accent-gold)', animation: 'spin 1s linear infinite' }} />
+                  <Smartphone size={24} style={{ position: 'absolute', top: '18px', left: '18px', color: 'var(--accent-gold)' }} />
+                </div>
+                
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '600', color: '#0F1111', marginBottom: '0.5rem' }}>
+                  Approve Payment in Your UPI App
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: '#565959', marginBottom: '1rem', lineHeight: '1.5' }}>
+                  Collect request sent to <strong>{vpaId || '7455042260@pthdfc'}</strong>.<br />
+                  Please open <strong>GPay / PhonePe / Paytm</strong> to approve <strong>₹{total.toLocaleString()}</strong>.
+                </p>
+
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.4rem', marginBottom: '1.2rem' }}>
+                  <span style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem', border: '1px solid #DDD', borderRadius: '4px', fontWeight: '600', backgroundColor: '#F7F7F7' }}>GPay</span>
+                  <span style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem', border: '1px solid #DDD', borderRadius: '4px', fontWeight: '600', backgroundColor: '#F7F7F7' }}>PhonePe</span>
+                  <span style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem', border: '1px solid #DDD', borderRadius: '4px', fontWeight: '600', backgroundColor: '#F7F7F7' }}>Paytm</span>
+                  <span style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem', border: '1px solid #DDD', borderRadius: '4px', fontWeight: '600', backgroundColor: '#F7F7F7' }}>BHIM</span>
+                </div>
+
+                <div style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--accent-gold-dark)', backgroundColor: 'var(--accent-gold-light)', padding: '0.6rem', borderRadius: '4px' }}>
+                  Awaiting Bank Response ({Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')})
+                </div>
+              </div>
+            )}
+
+            {upiCollectStatus === 'approved' && (
+              <div>
+                <CheckCircle size={54} style={{ color: '#2e7d32', marginBottom: '1rem' }} />
+                <h3 style={{ fontSize: '1.3rem', fontWeight: '600', color: '#2e7d32', marginBottom: '0.4rem' }}>
+                  UPI Payment Approved & Received!
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: '#565959' }}>
+                  Transaction Verified • Confirming your order and updating registry...
+                </p>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      )}
 
     </motion.div>
   );

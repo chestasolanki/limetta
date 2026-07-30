@@ -37,20 +37,26 @@ Generated OTP code for ${email} is: ${otp}`);
   }
 
   try {
-    await getTransporter().sendMail({
+    const mailPromise = getTransporter().sendMail({
       from: `"Limetta" <${EMAIL_USER}>`,
       to: email,
       subject: 'Your Limetta verification code',
       text: `Your verification code is: ${otp}. It is valid for 5 minutes. If you did not request this, you can ignore this email.`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
-          <h2 style="color: #111;">Verify your email</h2>
-          <p>Your Limetta verification code is:</p>
-          <p style="font-size: 28px; font-weight: bold; letter-spacing: 4px; color: #111;">${otp}</p>
+        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+          <h2 style="color: #111; font-family: Garamond, serif;">Limetta Luxury Interiors</h2>
+          <p>Your verification code is:</p>
+          <p style="font-size: 28px; font-weight: bold; letter-spacing: 4px; color: #b8860b;">${otp}</p>
           <p style="color: #666; font-size: 13px;">This code expires in 5 minutes. If you did not request this, you can safely ignore this email.</p>
         </div>
       `
     });
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Email transport timeout')), 4000)
+    );
+
+    await Promise.race([mailPromise, timeoutPromise]);
 
     console.log(`[Email Service] OTP email sent successfully to ${email}`);
     return true;

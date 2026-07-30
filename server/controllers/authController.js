@@ -51,7 +51,7 @@ const sendOTP = async (req, res) => {
 
     if (!emailSent) {
       return res.status(502).json({
-        message: 'Could not send verification email. Please ensure EMAIL_USER and EMAIL_APP_PASSWORD are set on Render.'
+        message: 'Could not send verification email. Please try again later.'
       });
     }
 
@@ -325,7 +325,7 @@ const forgotPasswordSendOTP = async (req, res) => {
 
     if (!emailSent) {
       return res.status(502).json({
-        message: 'Could not send verification email. Please ensure EMAIL_USER and EMAIL_APP_PASSWORD are set on Render.'
+        message: 'Could not send verification email. Please try again later.'
       });
     }
 

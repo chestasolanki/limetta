@@ -1,44 +1,26 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 /**
- * Email utility to send OTP codes using Gmail SMTP via Nodemailer.
+ * Send a verification code through Resend's HTTPS API.
  *
- * Setup required in .env:
- *   EMAIL_USER=youraddress@gmail.com
- *   EMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx   (Google App Password, NOT your login password)
+ * Required environment variables:
+ *   RESEND_API_KEY=re_replace_me
+ *   EMAIL_FROM=Limetta <noreply@example.com>
  *
- * Generate an App Password at: https://myaccount.google.com/apppasswords
- * (requires 2-Step Verification to be enabled on the Google account)
+ * Production delivery requires EMAIL_FROM to use a domain verified in Resend.
  */
-
-let transporter;
-
-const getTransporter = () => {
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_APP_PASSWORD
-      }
-    });
-  }
-  return transporter;
-};
-
 export const sendOTPEmail = async (email, otp) => {
-  const { EMAIL_USER, EMAIL_APP_PASSWORD } = process.env;
+  const { RESEND_API_KEY, EMAIL_FROM } = process.env;
 
-  if (!EMAIL_USER || !EMAIL_APP_PASSWORD) {
-    console.warn(`[Email Service WARNING] Email credentials not configured in .env.
-Please set EMAIL_USER and EMAIL_APP_PASSWORD.
-Generated OTP code for ${email} is: ${otp}`);
+  if (!RESEND_API_KEY || !EMAIL_FROM) {
+    console.error('[Email Service] Email provider is not configured.');
     return false;
   }
 
   try {
-    const mailPromise = getTransporter().sendMail({
-      from: `"Limetta" <${EMAIL_USER}>`,
+    const resend = new Resend(RESEND_API_KEY);
+    const { data, error } = await resend.emails.send({
+      from: EMAIL_FROM,
       to: email,
       subject: 'Your Limetta verification code',
       text: `Your verification code is: ${otp}. It is valid for 5 minutes. If you did not request this, you can ignore this email.`,
@@ -52,16 +34,14 @@ Generated OTP code for ${email} is: ${otp}`);
       `
     });
 
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Email transport timeout')), 4000)
-    );
+    if (error || !data?.id) {
+      console.error('[Email Service] Email provider rejected the request.');
+      return false;
+    }
 
-    await Promise.race([mailPromise, timeoutPromise]);
-
-    console.log(`[Email Service] OTP email sent successfully to ${email}`);
     return true;
-  } catch (error) {
-    console.error('[Email Service] Failed to send OTP email:', error.message);
+  } catch {
+    console.error('[Email Service] Email provider request failed.');
     return false;
   }
 };

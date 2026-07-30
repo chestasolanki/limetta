@@ -8,6 +8,11 @@ export const apiFetch = async (endpoint, options = {}) => {
     defaultHeaders['Content-Type'] = 'application/json';
   }
 
+  const token = localStorage.getItem('limetta_token');
+  if (token) {
+    defaultHeaders['Authorization'] = `Bearer ${token}`;
+  }
+
   const defaultOptions = {
     credentials: 'include',
     headers: {

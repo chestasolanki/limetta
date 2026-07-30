@@ -499,6 +499,9 @@ export const AppProvider = ({ children }) => {
       });
       
       if (data) {
+        if (data.token) {
+          localStorage.setItem('limetta_token', data.token);
+        }
         const street = data.address?.street || '';
         const city = data.address?.city || '';
         const state = data.address?.state || '';
@@ -623,6 +626,7 @@ export const AppProvider = ({ children }) => {
   const logout = async () => {
     try {
       await apiFetch('/auth/logout', { method: 'POST' });
+      localStorage.removeItem('limetta_token');
       setUser(null);
       setCart([]);
       setWishlist([]);

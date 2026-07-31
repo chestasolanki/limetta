@@ -103,6 +103,21 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const fetchInquiries = async () => {
+    try {
+      const data = await apiFetch('/inquiries');
+      if (Array.isArray(data)) {
+        const mapped = data.map((inq) => ({
+          ...inq,
+          id: inq._id || inq.id
+        }));
+        setInquiries(mapped);
+      }
+    } catch (err) {
+      console.error('Error fetching inquiries:', err.message);
+    }
+  };
+
   const fetchCart = async () => {
     try {
       const data = await apiFetch('/cart');
@@ -244,22 +259,27 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Initial Load & Real-Time Polling for Order Status Synchronization across Client and Admin
+  // Initial Load & Real-Time Polling for Order Status & Inquiry Synchronization across Client and Admin
   useEffect(() => {
     fetchProducts();
     fetchCategories();
     fetchSettings();
+    fetchInquiries();
     checkSession();
   }, []);
 
   useEffect(() => {
+    fetchInquiries();
     if (user) {
       fetchOrders();
-      const interval = setInterval(() => {
-        fetchOrders();
-      }, 3000); // Polling every 3 seconds for instant real-time status updates on client side
-      return () => clearInterval(interval);
     }
+    const interval = setInterval(() => {
+      fetchInquiries();
+      if (user) {
+        fetchOrders();
+      }
+    }, 3000); // Polling every 3 seconds for instant real-time status updates on client side
+    return () => clearInterval(interval);
   }, [user]);
 
   const setRoute = (newRoute) => {
@@ -381,19 +401,36 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Local Inquiry Resolution (No Database Required for Inquiries)
-  const resolveInquiry = (inquiryId) => {
-    setInquiries((prevInqs) => prevInqs.filter((inq) => inq.id !== inquiryId));
+  // Inquiry Resolution & Persistence via API
+  const resolveInquiry = async (inquiryId) => {
+    try {
+      await apiFetch(`/inquiries/${inquiryId}/resolve`, { method: 'PUT' });
+      await fetchInquiries();
+    } catch (err) {
+      console.error('Error resolving inquiry:', err.message);
+      setInquiries((prevInqs) => prevInqs.filter((inq) => inq.id !== inquiryId && inq._id !== inquiryId));
+    }
   };
 
-  const addInquiry = (newInq) => {
-    const inquiryRecord = {
-      id: Date.now(),
-      date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-      resolved: false,
-      ...newInq
-    };
-    setInquiries((prevInqs) => [inquiryRecord, ...prevInqs]);
+  const addInquiry = async (newInq) => {
+    try {
+      const savedInq = await apiFetch('/inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newInq)
+      });
+      await fetchInquiries();
+      return savedInq;
+    } catch (err) {
+      console.error('Error submitting inquiry:', err.message);
+      const inquiryRecord = {
+        id: Date.now(),
+        date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+        resolved: false,
+        ...newInq
+      };
+      setInquiries((prevInqs) => [inquiryRecord, ...prevInqs]);
+    }
   };
 
   // Add to Cart (Requires logged in account)

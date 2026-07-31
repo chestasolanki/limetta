@@ -11,6 +11,7 @@ import orderRoutes from './routes/orderRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import settingRoutes from './routes/settingRoutes.js';
+import inquiryRoutes from './routes/inquiryRoutes.js';
 
 const app = express();
 
@@ -47,6 +48,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/settings', settingRoutes);
+app.use('/api/inquiries', inquiryRoutes);
 
 // Root test route
 app.get('/', (req, res) => {

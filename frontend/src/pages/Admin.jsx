@@ -47,28 +47,18 @@ const Admin = () => {
     setTimeout(() => setDeliveryChargeSaved(false), 3000);
   };
 
-  // Product Edit Modal States
+  // Product Price Edit Modal States
   const [editingProduct, setEditingProduct] = useState(null);
-  const [editName, setEditName] = useState('');
-  const [editStock, setEditStock] = useState(0);
   const [editMrp, setEditMrp] = useState(0);
   const [editDiscount, setEditDiscount] = useState(0);
   const [editPrice, setEditPrice] = useState(0);
-  const [editCategory, setEditCategory] = useState('');
-  const [editShortDesc, setEditShortDesc] = useState('');
-  const [editFullDesc, setEditFullDesc] = useState('');
   const [editSuccess, setEditSuccess] = useState(false);
 
   const openEditModal = (prod) => {
     setEditingProduct(prod);
-    setEditName(prod.name || prod.title || '');
-    setEditStock(prod.stock || 0);
     setEditMrp(prod.mrp || prod.price || 0);
     setEditDiscount(prod.discount || 0);
     setEditPrice(prod.price || 0);
-    setEditCategory(prod.category || '');
-    setEditShortDesc(prod.shortDescription || '');
-    setEditFullDesc(prod.fullDesc || prod.description || '');
     setEditSuccess(false);
   };
 
@@ -89,14 +79,14 @@ const Admin = () => {
     if (!editingProduct) return;
 
     await updateProduct(editingProduct.id, {
-      name: editName,
-      stock: Number(editStock),
+      name: editingProduct.name || editingProduct.title,
+      stock: editingProduct.stock,
       mrp: Number(editMrp),
       discount: Number(editDiscount),
       price: Number(editPrice),
-      category: editCategory,
-      shortDescription: editShortDesc,
-      description: editFullDesc
+      category: editingProduct.category,
+      shortDescription: editingProduct.shortDescription,
+      description: editingProduct.fullDesc || editingProduct.description
     });
 
     setEditSuccess(true);
@@ -994,7 +984,7 @@ const Admin = () => {
                     <form onSubmit={handleSaveEditProduct} style={{ backgroundColor: 'var(--bg-pure)', padding: '2rem', border: '2px solid var(--accent-gold)', marginBottom: '1.5rem', borderRadius: '4px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                         <h4 style={{ fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0, color: 'var(--text-heading)' }}>
-                          Update Piece & Pricing: {editingProduct.name}
+                          Update Price: {editingProduct.name}
                         </h4>
                         <button 
                           type="button" 
@@ -1009,38 +999,13 @@ const Admin = () => {
                       {editSuccess && (
                         <div className="auth-success-alert" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
                           <CheckCircle size={16} />
-                          <span>Product price, discount, and stock updated successfully.</span>
+                          <span>Product price updated successfully.</span>
                         </div>
                       )}
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2.5fr', gap: '1.5rem' }}>
-                        <div className="form-group">
-                          <label>Category</label>
-                          <select 
-                            className="form-control" 
-                            value={editCategory}
-                            onChange={(e) => setEditCategory(e.target.value)}
-                          >
-                            {Array.isArray(categoriesList) && categoriesList.map(cat => cat && cat.name && (
-                              <option key={cat.id || cat._id} value={cat.name}>{cat.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="form-group">
-                          <label>Object Name</label>
-                          <input 
-                            type="text" 
-                            className="form-control" 
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            required
-                          />
-                        </div>
-                      </div>
-
                       {/* Pricing & Discount Grid */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1.5rem' }}>
-                        <div className="form-group">
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
                           <label>M.R.P. (Original Price - ₹)</label>
                           <input 
                             type="number" 
@@ -1051,7 +1016,7 @@ const Admin = () => {
                             required
                           />
                         </div>
-                        <div className="form-group">
+                        <div className="form-group" style={{ marginBottom: 0 }}>
                           <label>Discount (%)</label>
                           <input 
                             type="number" 
@@ -1063,7 +1028,7 @@ const Admin = () => {
                             max="100"
                           />
                         </div>
-                        <div className="form-group">
+                        <div className="form-group" style={{ marginBottom: 0 }}>
                           <label>Selling Price (Auto-Calculated - ₹)</label>
                           <input 
                             type="number" 
@@ -1074,42 +1039,11 @@ const Admin = () => {
                             style={{ backgroundColor: 'var(--bg-color)', fontWeight: 'bold' }}
                           />
                         </div>
-                        <div className="form-group">
-                          <label>Available Stock (Pieces)</label>
-                          <input 
-                            type="number" 
-                            className="form-control" 
-                            value={editStock}
-                            onChange={(e) => setEditStock(e.target.value)}
-                            min="0"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div className="form-group">
-                        <label>Short Description</label>
-                        <input 
-                          type="text" 
-                          className="form-control" 
-                          value={editShortDesc}
-                          onChange={(e) => setEditShortDesc(e.target.value)}
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Editorial Description</label>
-                        <textarea 
-                          className="form-control" 
-                          value={editFullDesc}
-                          onChange={(e) => setEditFullDesc(e.target.value)}
-                          rows={3}
-                        />
                       </div>
 
                       <div style={{ display: 'flex', gap: '1rem' }}>
                         <button type="submit" className="btn-primary" style={{ flex: 1 }}>
-                          Save Pricing & Product Changes
+                          Save Price Update
                         </button>
                         <button type="button" className="btn-secondary" onClick={() => setEditingProduct(null)}>
                           Cancel
@@ -1175,10 +1109,10 @@ const Admin = () => {
                           <button 
                             style={{ color: 'var(--accent-gold-dark)', padding: '0.4rem 0.8rem', marginRight: '0.5rem', background: 'none', border: '1px solid var(--border-color)', borderRadius: '2px', cursor: 'pointer' }}
                             onClick={() => openEditModal(product)}
-                            title="Update Price, Discount & Stock"
+                            title="Update Price"
                           >
                             <Edit2 size={15} style={{ verticalAlign: 'middle', marginRight: '0.3rem' }} />
-                            <span style={{ fontSize: '0.75rem', fontWeight: '500' }}>Edit Piece</span>
+                            <span style={{ fontSize: '0.75rem', fontWeight: '500' }}>Edit Price</span>
                           </button>
                           <button 
                             style={{ color: '#B83B3B', padding: '0.4rem 0.6rem', background: 'none', border: '1px solid var(--border-color)', borderRadius: '2px', cursor: 'pointer' }}
